@@ -141,6 +141,15 @@
         .tab-content.active {
             @apply block;
         }
+        
+        /* 새로 시작 버튼 애니메이션 */
+        .reset-button {
+            transition: all 0.3s ease;
+        }
+        .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(107, 114, 128, 0.3);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-purple-100 to-pink-100 min-h-screen p-4">
@@ -154,6 +163,14 @@
         <div class="grid lg:grid-cols-2 gap-8">
             <!-- 왼쪽: 꾸미기 도구 -->
             <div class="bg-white rounded-2xl shadow-lg p-6">
+                <!-- 상단 새로 시작 버튼 -->
+                <div class="mb-4">
+                    <button onclick="resetSign()" 
+                            class="reset-button w-full bg-gradient-to-r from-orange-400 to-red-500 text-white py-3 px-4 rounded-lg font-bold hover:from-orange-500 hover:to-red-600 transition-all duration-300 flex items-center justify-center shadow-lg">
+                        <span class="text-xl mr-2">🔄</span> 새로 시작하기
+                    </button>
+                </div>
+
                 <!-- 탭 메뉴 -->
                 <div class="flex space-x-2 mb-6 border-b">
                     <button class="tab-button active" onclick="switchTab('design')">🎨 디자인</button>
@@ -412,22 +429,22 @@
                 </div>
 
                 <!-- 저장 버튼 -->
-                <div class="flex flex-wrap gap-3 mt-6">
+                <div class="grid grid-cols-2 gap-3 mt-6">
                     <button onclick="saveAsImage()" 
-                            class="flex-1 bg-purple-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-purple-600 transition-colors flex items-center justify-center">
+                            class="bg-purple-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-purple-600 transition-colors flex items-center justify-center">
                         <span class="text-xl mr-2">📸</span> PNG로 저장
                     </button>
                     <button onclick="saveAsPDF()" 
-                            class="flex-1 bg-blue-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-blue-600 transition-colors flex items-center justify-center">
+                            class="bg-blue-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-blue-600 transition-colors flex items-center justify-center">
                         <span class="text-xl mr-2">📄</span> PDF로 저장
                     </button>
                     <button onclick="addToPrintList()" 
-                            class="flex-1 bg-green-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-green-600 transition-colors flex items-center justify-center">
+                            class="bg-green-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-green-600 transition-colors flex items-center justify-center">
                         <span class="text-xl mr-2">➕</span> 인쇄 목록에 추가
                     </button>
-                    <button onclick="resetSign()" 
-                            class="bg-gray-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-gray-600 transition-colors flex items-center justify-center">
-                        <span class="text-xl mr-2">🔄</span> 새로 만들기
+                    <button onclick="showQuickReset()" 
+                            class="bg-orange-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-orange-600 transition-colors flex items-center justify-center">
+                        <span class="text-xl mr-2">⚡</span> 빠른 초기화
                     </button>
                 </div>
 
@@ -916,17 +933,17 @@
             }
         }
         
-        // 초기화
+        // 초기화 (개선된 버전)
         function resetSign() {
-            if (confirm('정말 새로 만들까요? 지금까지 만든 문패는 사라져요!')) {
+            // 친근한 확인 메시지
+            const isConfirmed = confirm('🔄 새로운 문패를 만들까요?\n\n지금까지 만든 문패는 사라지지만, 언제든지 다시 만들 수 있어요!');
+            
+            if (isConfirmed) {
                 // 입력 필드 초기화
-                document.getElementById('ownerInput').value = '';
-                document.getElementById('nameInput').value = '';
-                document.getElementById('moodInput').value = '';
-                document.getElementById('requestInput').value = '';
-                document.getElementById('mottoInput').value = '';
-                document.getElementById('extraInput1').value = '';
-                document.getElementById('extraInput2').value = '';
+                const inputs = ['ownerInput', 'nameInput', 'moodInput', 'requestInput', 'mottoInput', 'extraInput1', 'extraInput2'];
+                inputs.forEach(id => {
+                    document.getElementById(id).value = '';
+                });
                 
                 // 표시 텍스트 초기화
                 document.getElementById('displayOwner').textContent = '문패 주인을 입력해주세요';
@@ -949,13 +966,67 @@
                 document.querySelector('input[name="font"][value="font-handwriting"]').checked = true;
                 
                 // 선택 표시 초기화
-                document.querySelectorAll('.color-option, .size-option, .border-option').forEach(opt => {
-                    opt.classList.remove('ring-4', 'ring-2', 'ring-purple-400', 'bg-purple-50');
+                document.querySelectorAll('.color-option, .size-option, .border-option, .template-option').forEach(opt => {
+                    opt.classList.remove('ring-4', 'ring-2', 'ring-purple-400', 'bg-purple-50', 'border-purple-400');
+                    if (opt.classList.contains('template-option')) {
+                        opt.classList.add('border-gray-200');
+                    }
                 });
                 
                 // 첫 번째 색상과 보통 크기 선택 표시
                 document.querySelector('.color-option').classList.add('ring-4', 'ring-purple-400');
                 document.querySelectorAll('.size-option')[1].classList.add('ring-4', 'ring-purple-400', 'bg-purple-50');
+                
+                // 디자인 탭으로 전환
+                document.querySelectorAll('.tab-button')[0].click();
+                
+                // 성공 메시지
+                setTimeout(() => {
+                    alert('✨ 새로운 문패 만들기가 시작되었어요!\n마음껏 꾸며보세요! 🎨');
+                }, 300);
+            }
+        }
+        
+        // 빠른 초기화 (확인 없이)
+        function showQuickReset() {
+            const isConfirmed = confirm('⚡ 빠른 초기화\n\n확인 없이 바로 초기화됩니다.\n정말 계속하시겠어요?');
+            
+            if (isConfirmed) {
+                // 초기화 실행 (확인 메시지 없이)
+                const inputs = ['ownerInput', 'nameInput', 'moodInput', 'requestInput', 'mottoInput', 'extraInput1', 'extraInput2'];
+                inputs.forEach(id => {
+                    document.getElementById(id).value = '';
+                });
+                
+                document.getElementById('displayOwner').textContent = '문패 주인을 입력해주세요';
+                document.getElementById('displayName').textContent = '이름을 입력해주세요';
+                document.getElementById('displayMood').textContent = '-';
+                document.getElementById('displayRequest').textContent = '-';
+                document.getElementById('displayMotto').textContent = '-';
+                document.getElementById('displayExtraText1').textContent = '-';
+                document.getElementById('displayExtraText2').textContent = '-';
+                
+                document.querySelectorAll('.sticker').forEach(s => s.remove());
+                stickerCount = 0;
+                
+                const doorSign = document.getElementById('doorSign');
+                doorSign.className = 'bg-pink-200 p-6 font-handwriting size-medium border-4 border-solid border-gray-800';
+                
+                document.querySelector('input[name="font"][value="font-handwriting"]').checked = true;
+                
+                document.querySelectorAll('.color-option, .size-option, .border-option, .template-option').forEach(opt => {
+                    opt.classList.remove('ring-4', 'ring-2', 'ring-purple-400', 'bg-purple-50', 'border-purple-400');
+                    if (opt.classList.contains('template-option')) {
+                        opt.classList.add('border-gray-200');
+                    }
+                });
+                
+                document.querySelector('.color-option').classList.add('ring-4', 'ring-purple-400');
+                document.querySelectorAll('.size-option')[1].classList.add('ring-4', 'ring-purple-400', 'bg-purple-50');
+                
+                document.querySelectorAll('.tab-button')[0].click();
+                
+                alert('⚡ 빠른 초기화 완료!');
             }
         }
     </script>
