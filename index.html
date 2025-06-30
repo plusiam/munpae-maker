@@ -322,6 +322,18 @@
                         <input type="text" id="mottoInput" placeholder="예) 오늘도 화이팅!" 
                                class="w-full p-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none">
                     </div>
+                    
+                    <div id="extraField1" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">⑤ 오늘의 목표</label>
+                        <input type="text" id="extraInput1" placeholder="예) 수학 문제집 10쪽 풀기" 
+                               class="w-full p-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none">
+                    </div>
+                    
+                    <div id="extraField2" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">⑥ 친구에게 한마디</label>
+                        <input type="text" id="extraInput2" placeholder="예) 같이 놀자! 재미있는 게임 준비했어" 
+                               class="w-full p-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none">
+                    </div>
                 </div>
 
                 <!-- 템플릿 탭 -->
@@ -383,6 +395,16 @@
                                 <div class="bg-white bg-opacity-70 rounded-lg p-3 flex flex-col justify-center">
                                     <p class="text-xs text-gray-600 mb-1">내가 좋아하는 한마디</p>
                                     <p id="displayMotto" class="text-base text-gray-800 leading-tight">-</p>
+                                </div>
+                                
+                                <div id="displayExtra1" class="bg-white bg-opacity-70 rounded-lg p-3 flex flex-col justify-center hidden">
+                                    <p class="text-xs text-gray-600 mb-1">오늘의 목표</p>
+                                    <p id="displayExtraText1" class="text-base text-gray-800 leading-tight">-</p>
+                                </div>
+                                
+                                <div id="displayExtra2" class="bg-white bg-opacity-70 rounded-lg p-3 flex flex-col justify-center hidden">
+                                    <p class="text-xs text-gray-600 mb-1">친구에게 한마디</p>
+                                    <p id="displayExtraText2" class="text-base text-gray-800 leading-tight">-</p>
                                 </div>
                             </div>
                         </div>
@@ -498,6 +520,32 @@
             // 선택 표시
             document.querySelectorAll('.size-option').forEach(opt => opt.classList.remove('ring-4', 'ring-purple-400', 'bg-purple-50'));
             event.currentTarget.classList.add('ring-4', 'ring-purple-400', 'bg-purple-50');
+            
+            // 크기에 따라 추가 필드 표시/숨김
+            const extraField1 = document.getElementById('extraField1');
+            const extraField2 = document.getElementById('extraField2');
+            const displayExtra1 = document.getElementById('displayExtra1');
+            const displayExtra2 = document.getElementById('displayExtra2');
+            
+            if (size === 'small') {
+                // 작은 크기: 추가 필드 숨김
+                extraField1.classList.add('hidden');
+                extraField2.classList.add('hidden');
+                displayExtra1.classList.add('hidden');
+                displayExtra2.classList.add('hidden');
+            } else if (size === 'medium') {
+                // 보통 크기: 1개 추가 필드
+                extraField1.classList.remove('hidden');
+                extraField2.classList.add('hidden');
+                displayExtra1.classList.remove('hidden');
+                displayExtra2.classList.add('hidden');
+            } else if (size === 'large') {
+                // 큰 크기: 2개 추가 필드
+                extraField1.classList.remove('hidden');
+                extraField2.classList.remove('hidden');
+                displayExtra1.classList.remove('hidden');
+                displayExtra2.classList.remove('hidden');
+            }
         }
 
         // 테두리 스타일 선택
@@ -800,6 +848,16 @@
             display.textContent = this.value || '-';
         });
         
+        document.getElementById('extraInput1').addEventListener('input', function() {
+            const display = document.getElementById('displayExtraText1');
+            display.textContent = this.value || '-';
+        });
+        
+        document.getElementById('extraInput2').addEventListener('input', function() {
+            const display = document.getElementById('displayExtraText2');
+            display.textContent = this.value || '-';
+        });
+        
         // 이미지로 저장
         async function saveAsImage() {
             const doorSign = document.getElementById('doorSign');
@@ -867,6 +925,8 @@
                 document.getElementById('moodInput').value = '';
                 document.getElementById('requestInput').value = '';
                 document.getElementById('mottoInput').value = '';
+                document.getElementById('extraInput1').value = '';
+                document.getElementById('extraInput2').value = '';
                 
                 // 표시 텍스트 초기화
                 document.getElementById('displayOwner').textContent = '문패 주인을 입력해주세요';
@@ -874,6 +934,8 @@
                 document.getElementById('displayMood').textContent = '-';
                 document.getElementById('displayRequest').textContent = '-';
                 document.getElementById('displayMotto').textContent = '-';
+                document.getElementById('displayExtraText1').textContent = '-';
+                document.getElementById('displayExtraText2').textContent = '-';
                 
                 // 스티커 제거
                 document.querySelectorAll('.sticker').forEach(s => s.remove());
