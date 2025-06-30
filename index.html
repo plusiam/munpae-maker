@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 마음을 알리는 문패 만들기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Single+Day&display=swap');
+        
+        .font-handwriting { font-family: 'Gaegu', cursive; }
+        .font-neat { font-family: 'Noto Sans KR', sans-serif; }
+        .font-cute { font-family: 'Single Day', cursive; }
+        
+        .sticker {
+            cursor: move;
+            position: absolute;
+            font-size: 2rem;
+            user-select: none;
+            transition: transform 0.2s;
+            z-index: 10;
+            line-height: 1;
+        }
+        
+        .sticker:hover {
+            transform: scale(1.1);
+        }
+        
+        .dragging {
+            opacity: 0.5;
+            z-index: 1000;
+        }
+        
+        #doorSign {
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        /* 문패 크기 스타일 */
+        .size-small {
+            width: 250px;
+            min-height: 380px;
+            border-radius: 16px;
+        }
+        
+        .size-medium {
+            width: 300px;
+            min-height: 450px;
+            border-radius: 20px;
+        }
+        
+        .size-large {
+            width: 350px;
+            min-height: 520px;
+            border-radius: 24px;
+        }
+        
+        .size-small .text-2xl { font-size: 1.5rem; }
+        .size-small .text-xl { font-size: 1.125rem; }
+        .size-small .text-base { font-size: 0.875rem; }
+        
+        .size-large .text-2xl { font-size: 2rem; }
+        .size-large .text-xl { font-size: 1.5rem; }
+        .size-large .text-base { font-size: 1.125rem; }
+        
+        /* 테두리 스타일 */
+        .border-style-solid {
+            border-style: solid;
+        }
+        
+        .border-style-dashed {
+            border-style: dashed;
+        }
+        
+        .border-style-dotted {
+            border-style: dotted;
+        }
+        
+        .border-style-double {
+            border-style: double;
+            border-width: 6px;
+        }
+        
+        .color-option, .size-option, .border-option, .template-option {
+            transition: all 0.2s;
+        }
+        
+        .color-option:hover, .size-option:hover, .border-option:hover, .template-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-option.selected, .size-option.selected, .border-option.selected {
+            ring: 4;
+            ring-offset: 2;
+        }
+        
+        /* 인쇄용 스타일 */
+        @media print {
+            body {
+                background: white !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            #printArea {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+                padding: 20px;
+            }
+            .print-sign {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+        
+        .print-only {
+            display: none;
+        }
+        
+        /* 탭 스타일 */
+        .tab-button {
+            @apply px-4 py-2 rounded-t-lg font-medium transition-colors;
+        }
+        .tab-button.active {
+            @apply bg-white text-purple-600 border-b-2 border-white;
+        }
+        .tab-button:not(.active) {
+            @apply bg-purple-100 text-purple-600 hover:bg-purple-200;
+        }
+        .tab-content {
+            @apply hidden;
+        }
+        .tab-content.active {
+            @apply block;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-100 to-pink-100 min-h-screen p-4">
+    <div class="max-w-6xl mx-auto no-print">
+        <!-- 헤더 -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-purple-800 mb-2">🪧 내 마음을 알리는 문패 만들기</h1>
+            <p class="text-lg text-purple-600">나만의 특별한 문패를 만들어 내 마음을 표현해요!</p>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-8">
+            <!-- 왼쪽: 꾸미기 도구 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <!-- 탭 메뉴 -->
+                <div class="flex space-x-2 mb-6 border-b">
+                    <button class="tab-button active" onclick="switchTab('design')">🎨 디자인</button>
+                    <button class="tab-button" onclick="switchTab('content')">📝 내용</button>
+                    <button class="tab-button" onclick="switchTab('template')">📋 템플릿</button>
+                </div>
+
+                <!-- 디자인 탭 -->
+                <div id="design-tab" class="tab-content active space-y-6">
+                    <!-- 문패 크기 선택 -->
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            <span class="text-2xl mr-2">📏</span> 문패 크기를 골라요
+                        </h3>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="size-option cursor-pointer text-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400" onclick="selectSize('small')">
+                                <div class="w-14 h-20 bg-purple-200 rounded mx-auto mb-2"></div>
+                                <span class="text-sm font-medium">작은 크기</span>
+                            </div>
+                            <div class="size-option cursor-pointer text-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400 ring-4 ring-purple-400 bg-purple-50" onclick="selectSize('medium')">
+                                <div class="w-16 h-24 bg-purple-200 rounded mx-auto mb-2"></div>
+                                <span class="text-sm font-medium">보통 크기</span>
+                            </div>
+                            <div class="size-option cursor-pointer text-center p-3 border-2 border-gray-200 rounded-lg hover:border-purple-400" onclick="selectSize('large')">
+                                <div class="w-18 h-28 bg-purple-200 rounded mx-auto mb-2"></div>
+                                <span class="text-sm font-medium">큰 크기</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 배경색 선택 -->
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            <span class="text-2xl mr-2">🎨</span> 배경색을 골라요
+                        </h3>
+                        <div class="grid grid-cols-6 gap-2" id="colorPalette">
+                            <div class="color-option w-12 h-12 bg-pink-200 rounded-lg cursor-pointer ring-4 ring-purple-400" data-color="bg-pink-200"></div>
+                            <div class="color-option w-12 h-12 bg-purple-200 rounded-lg cursor-pointer" data-color="bg-purple-200"></div>
+                            <div class="color-option w-12 h-12 bg-blue-200 rounded-lg cursor-pointer" data-color="bg-blue-200"></div>
+                            <div class="color-option w-12 h-12 bg-green-200 rounded-lg cursor-pointer" data-color="bg-green-200"></div>
+                            <div class="color-option w-12 h-12 bg-yellow-200 rounded-lg cursor-pointer" data-color="bg-yellow-200"></div>
+                            <div class="color-option w-12 h-12 bg-orange-200 rounded-lg cursor-pointer" data-color="bg-orange-200"></div>
+                        </div>
+                    </div>
+
+                    <!-- 테두리 스타일 -->
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            <span class="text-2xl mr-2">🖼️</span> 테두리를 꾸며요
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-sm font-medium text-gray-600">테두리 스타일</label>
+                                <div class="grid grid-cols-4 gap-2 mt-1">
+                                    <button class="border-option p-2 bg-gray-50 rounded hover:bg-gray-100" onclick="selectBorderStyle('solid')">
+                                        <div class="h-8 border-2 border-gray-400 border-solid rounded"></div>
+                                        <span class="text-xs">실선</span>
+                                    </button>
+                                    <button class="border-option p-2 bg-gray-50 rounded hover:bg-gray-100" onclick="selectBorderStyle('dashed')">
+                                        <div class="h-8 border-2 border-gray-400 border-dashed rounded"></div>
+                                        <span class="text-xs">점선</span>
+                                    </button>
+                                    <button class="border-option p-2 bg-gray-50 rounded hover:bg-gray-100" onclick="selectBorderStyle('dotted')">
+                                        <div class="h-8 border-2 border-gray-400 border-dotted rounded"></div>
+                                        <span class="text-xs">점</span>
+                                    </button>
+                                    <button class="border-option p-2 bg-gray-50 rounded hover:bg-gray-100" onclick="selectBorderStyle('double')">
+                                        <div class="h-8 border-4 border-gray-400 border-double rounded"></div>
+                                        <span class="text-xs">이중선</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-600">테두리 색상</label>
+                                <div class="grid grid-cols-6 gap-2 mt-1">
+                                    <div class="w-10 h-10 bg-gray-800 rounded cursor-pointer" onclick="selectBorderColor('border-gray-800')"></div>
+                                    <div class="w-10 h-10 bg-purple-600 rounded cursor-pointer" onclick="selectBorderColor('border-purple-600')"></div>
+                                    <div class="w-10 h-10 bg-pink-600 rounded cursor-pointer" onclick="selectBorderColor('border-pink-600')"></div>
+                                    <div class="w-10 h-10 bg-blue-600 rounded cursor-pointer" onclick="selectBorderColor('border-blue-600')"></div>
+                                    <div class="w-10 h-10 bg-green-600 rounded cursor-pointer" onclick="selectBorderColor('border-green-600')"></div>
+                                    <div class="w-10 h-10 bg-yellow-600 rounded cursor-pointer" onclick="selectBorderColor('border-yellow-600')"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 글씨체 선택 -->
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            <span class="text-2xl mr-2">✏️</span> 글씨체를 골라요
+                        </h3>
+                        <div class="space-y-2">
+                            <label class="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                                <input type="radio" name="font" value="font-handwriting" checked class="mr-3">
+                                <span class="font-handwriting text-lg">손글씨체</span>
+                            </label>
+                            <label class="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                                <input type="radio" name="font" value="font-neat" class="mr-3">
+                                <span class="font-neat text-lg">반듯한체</span>
+                            </label>
+                            <label class="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                                <input type="radio" name="font" value="font-cute" class="mr-3">
+                                <span class="font-cute text-lg">귀여운체</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 스티커 선택 -->
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            <span class="text-2xl mr-2">🌟</span> 스티커를 붙여요 (클릭하면 문패에 나타나요!)
+                        </h3>
+                        <div class="grid grid-cols-8 gap-2 bg-gray-50 p-3 rounded-lg" id="stickerPalette">
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">😊</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">😴</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">🤫</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">😎</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">📚</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">🎮</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">🎵</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">⚽</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">🎨</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">💤</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">✨</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">❤️</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">🌈</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">🍕</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">🐶</span>
+                            <span class="text-2xl cursor-pointer hover:scale-110 transition-transform">🐱</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 내용 탭 -->
+                <div id="content-tab" class="tab-content space-y-4">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                        <span class="text-2xl mr-2">📝</span> 문패 내용을 써요
+                    </h3>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">🏠 우리 집 이름 (문패 주인)</label>
+                        <input type="text" id="ownerInput" placeholder="예) 햇살이네 집, 김민준의 방" 
+                               class="w-full p-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">① 내 이름 또는 별명</label>
+                        <input type="text" id="nameInput" placeholder="예) 햇살이, 책벌레" 
+                               class="w-full p-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">② 지금 내 마음은...</label>
+                        <input type="text" id="moodInput" placeholder="예) 혼자만의 시간이 필요해요" 
+                               class="w-full p-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">③ 나에게 부탁해요</label>
+                        <input type="text" id="requestInput" placeholder="예) 노크는 필수!" 
+                               class="w-full p-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">④ 내가 좋아하는 한마디</label>
+                        <input type="text" id="mottoInput" placeholder="예) 오늘도 화이팅!" 
+                               class="w-full p-3 border-2 border-purple-200 rounded-lg focus:border-purple-400 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- 템플릿 탭 -->
+                <div id="template-tab" class="tab-content">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <span class="text-2xl mr-2">📋</span> 템플릿을 선택해요
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="template-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-purple-400" 
+                             onclick="applyTemplate('study')">
+                            <h4 class="font-bold text-purple-600 mb-2">📚 공부중이에요</h4>
+                            <p class="text-sm text-gray-600">조용히 집중하고 있어요</p>
+                        </div>
+                        <div class="template-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-purple-400" 
+                             onclick="applyTemplate('rest')">
+                            <h4 class="font-bold text-green-600 mb-2">😴 쉬는 중이에요</h4>
+                            <p class="text-sm text-gray-600">잠시 휴식이 필요해요</p>
+                        </div>
+                        <div class="template-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-purple-400" 
+                             onclick="applyTemplate('play')">
+                            <h4 class="font-bold text-orange-600 mb-2">🎮 놀이 시간이에요</h4>
+                            <p class="text-sm text-gray-600">함께 놀아요!</p>
+                        </div>
+                        <div class="template-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-purple-400" 
+                             onclick="applyTemplate('welcome')">
+                            <h4 class="font-bold text-pink-600 mb-2">🌈 환영해요</h4>
+                            <p class="text-sm text-gray-600">언제든지 놀러오세요</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 문패 미리보기 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                    <span class="text-2xl mr-2">👀</span> 내 문패 미리보기
+                </h3>
+                
+                <div class="flex justify-center items-center" style="min-height: 500px;">
+                    <div id="doorSign" class="bg-pink-200 p-6 font-handwriting size-medium border-4 border-solid border-gray-800">
+                        <div class="text-center space-y-3 h-full flex flex-col">
+                            <div class="bg-white bg-opacity-80 rounded-lg px-4 py-3 mb-2">
+                                <h2 id="displayOwner" class="text-xl font-bold text-gray-800 leading-tight">문패 주인을 입력해주세요</h2>
+                            </div>
+                            
+                            <h3 id="displayName" class="text-2xl font-bold text-gray-800 mb-3 px-2">이름을 입력해주세요</h3>
+                            
+                            <div class="space-y-2 flex-grow">
+                                <div class="bg-white bg-opacity-70 rounded-lg p-3 flex flex-col justify-center">
+                                    <p class="text-xs text-gray-600 mb-1">지금 내 마음은...</p>
+                                    <p id="displayMood" class="text-base text-gray-800 leading-tight">-</p>
+                                </div>
+                                
+                                <div class="bg-white bg-opacity-70 rounded-lg p-3 flex flex-col justify-center">
+                                    <p class="text-xs text-gray-600 mb-1">나에게 부탁해요</p>
+                                    <p id="displayRequest" class="text-base text-gray-800 leading-tight">-</p>
+                                </div>
+                                
+                                <div class="bg-white bg-opacity-70 rounded-lg p-3 flex flex-col justify-center">
+                                    <p class="text-xs text-gray-600 mb-1">내가 좋아하는 한마디</p>
+                                    <p id="displayMotto" class="text-base text-gray-800 leading-tight">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 저장 버튼 -->
+                <div class="flex flex-wrap gap-3 mt-6">
+                    <button onclick="saveAsImage()" 
+                            class="flex-1 bg-purple-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-purple-600 transition-colors flex items-center justify-center">
+                        <span class="text-xl mr-2">📸</span> PNG로 저장
+                    </button>
+                    <button onclick="saveAsPDF()" 
+                            class="flex-1 bg-blue-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-blue-600 transition-colors flex items-center justify-center">
+                        <span class="text-xl mr-2">📄</span> PDF로 저장
+                    </button>
+                    <button onclick="addToPrintList()" 
+                            class="flex-1 bg-green-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-green-600 transition-colors flex items-center justify-center">
+                        <span class="text-xl mr-2">➕</span> 인쇄 목록에 추가
+                    </button>
+                    <button onclick="resetSign()" 
+                            class="bg-gray-500 text-white py-3 px-4 rounded-lg font-bold hover:bg-gray-600 transition-colors flex items-center justify-center">
+                        <span class="text-xl mr-2">🔄</span> 새로 만들기
+                    </button>
+                </div>
+
+                <!-- 인쇄 목록 -->
+                <div id="printListSection" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
+                    <h4 class="font-bold text-gray-800 mb-2">📋 인쇄 목록 (<span id="printCount">0</span>개)</h4>
+                    <div id="printPreviewList" class="space-y-2 mb-3"></div>
+                    <button onclick="printAll()" class="w-full bg-purple-500 text-white py-2 rounded-lg font-bold hover:bg-purple-600">
+                        🖨️ 전체 인쇄하기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 인쇄 영역 -->
+    <div id="printArea" class="print-only"></div>
+
+    <script>
+        // 전역 변수
+        let selectedFont = 'font-handwriting';
+        let selectedSize = 'medium';
+        let selectedBorderStyle = 'solid';
+        let selectedBorderColor = 'border-gray-800';
+        let stickerCount = 0;
+        let printList = [];
+
+        // 템플릿 데이터
+        const templates = {
+            study: {
+                owner: '공부방',
+                name: '열공중인 학생',
+                mood: '집중하고 있어요 📚',
+                request: '조용히 해주세요',
+                motto: '열공! 화이팅!',
+                bgColor: 'bg-blue-200',
+                borderColor: 'border-blue-600'
+            },
+            rest: {
+                owner: '휴식공간',
+                name: '쉬는 중',
+                mood: '잠시 쉬고 있어요 😴',
+                request: '30분만 기다려주세요',
+                motto: '충전 중... 💤',
+                bgColor: 'bg-green-200',
+                borderColor: 'border-green-600'
+            },
+            play: {
+                owner: '놀이방',
+                name: '게임 마스터',
+                mood: '신나게 놀고 있어요 🎮',
+                request: '같이 놀래?',
+                motto: '즐거운 시간!',
+                bgColor: 'bg-yellow-200',
+                borderColor: 'border-yellow-600'
+            },
+            welcome: {
+                owner: '우리집',
+                name: '친절한 주인',
+                mood: '기분이 좋아요 🌈',
+                request: '편하게 들어오세요',
+                motto: '좋은 하루 되세요!',
+                bgColor: 'bg-pink-200',
+                borderColor: 'border-pink-600'
+            }
+        };
+
+        // 탭 전환
+        function switchTab(tabName) {
+            // 모든 탭 버튼과 내용 비활성화
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // 선택된 탭 활성화
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        // 문패 크기 선택
+        function selectSize(size) {
+            selectedSize = size;
+            const doorSign = document.getElementById('doorSign');
+            
+            // 모든 크기 클래스 제거
+            doorSign.classList.remove('size-small', 'size-medium', 'size-large');
+            
+            // 새 크기 추가
+            doorSign.classList.add(`size-${size}`);
+            
+            // 선택 표시
+            document.querySelectorAll('.size-option').forEach(opt => opt.classList.remove('ring-4', 'ring-purple-400', 'bg-purple-50'));
+            event.currentTarget.classList.add('ring-4', 'ring-purple-400', 'bg-purple-50');
+        }
+
+        // 테두리 스타일 선택
+        function selectBorderStyle(style) {
+            selectedBorderStyle = style;
+            const doorSign = document.getElementById('doorSign');
+            
+            // 모든 테두리 스타일 제거
+            doorSign.classList.remove('border-solid', 'border-dashed', 'border-dotted', 'border-double');
+            
+            // 새 스타일 추가
+            doorSign.classList.add(`border-${style}`);
+            
+            // 선택 표시
+            document.querySelectorAll('.border-option').forEach(opt => opt.classList.remove('ring-2', 'ring-purple-400'));
+            event.currentTarget.classList.add('ring-2', 'ring-purple-400');
+        }
+
+        // 테두리 색상 선택
+        function selectBorderColor(color) {
+            selectedBorderColor = color;
+            const doorSign = document.getElementById('doorSign');
+            
+            // 기존 테두리 색상 제거
+            doorSign.className = doorSign.className.replace(/border-\w+-\d+/g, '');
+            
+            // 새 색상 추가
+            doorSign.classList.add(color);
+        }
+
+        // 템플릿 적용
+        function applyTemplate(templateName) {
+            const template = templates[templateName];
+            
+            // 입력 필드 채우기
+            document.getElementById('ownerInput').value = template.owner;
+            document.getElementById('nameInput').value = template.name;
+            document.getElementById('moodInput').value = template.mood;
+            document.getElementById('requestInput').value = template.request;
+            document.getElementById('mottoInput').value = template.motto;
+            
+            // 표시 텍스트 업데이트
+            document.getElementById('displayOwner').textContent = template.owner;
+            document.getElementById('displayName').textContent = template.name;
+            document.getElementById('displayMood').textContent = template.mood;
+            document.getElementById('displayRequest').textContent = template.request;
+            document.getElementById('displayMotto').textContent = template.motto;
+            
+            // 배경색 적용
+            const doorSign = document.getElementById('doorSign');
+            doorSign.className = doorSign.className.replace(/bg-\w+-200/g, '');
+            doorSign.classList.add(template.bgColor);
+            
+            // 테두리 색상 적용
+            selectBorderColor(template.borderColor);
+            
+            // 템플릿 적용 부분에서 모양(shape) 대신 크기(size) 설정
+            // 모든 템플릿은 medium 크기로 설정
+            selectedSize = 'medium';
+            const doorSignForSize = document.getElementById('doorSign');
+            doorSignForSize.classList.remove('size-small', 'size-medium', 'size-large');
+            doorSignForSize.classList.add('size-medium');
+            
+            // 모든 템플릿 선택 해제
+            document.querySelectorAll('.template-option').forEach(opt => {
+                opt.classList.remove('border-purple-400', 'bg-purple-50');
+                opt.classList.add('border-gray-200');
+            });
+            
+            // 현재 선택된 템플릿 표시
+            event.currentTarget.classList.remove('border-gray-200');
+            event.currentTarget.classList.add('border-purple-400', 'bg-purple-50');
+            
+            // 디자인 탭으로 전환
+            document.querySelectorAll('.tab-button')[0].click();
+        }
+
+        // 인쇄 목록에 추가
+        function addToPrintList() {
+            const doorSign = document.getElementById('doorSign');
+            
+            // 현재 문패의 HTML을 복사
+            const signClone = doorSign.cloneNode(true);
+            signClone.id = 'print-sign-' + printList.length;
+            
+            // 인쇄 목록에 추가
+            printList.push(signClone.outerHTML);
+            
+            // UI 업데이트
+            updatePrintList();
+            
+            alert('인쇄 목록에 추가되었습니다!');
+        }
+
+        // 인쇄 목록 업데이트
+        function updatePrintList() {
+            const printListSection = document.getElementById('printListSection');
+            const printCount = document.getElementById('printCount');
+            const printPreviewList = document.getElementById('printPreviewList');
+            
+            if (printList.length > 0) {
+                printListSection.classList.remove('hidden');
+                printCount.textContent = printList.length;
+                
+                // 미리보기 목록 표시
+                printPreviewList.innerHTML = printList.map((sign, index) => `
+                    <div class="flex justify-between items-center bg-white p-2 rounded">
+                        <span>문패 ${index + 1}</span>
+                        <button onclick="removeFromPrintList(${index})" class="text-red-500 hover:text-red-700">
+                            ❌ 삭제
+                        </button>
+                    </div>
+                `).join('');
+            } else {
+                printListSection.classList.add('hidden');
+            }
+        }
+
+        // 인쇄 목록에서 제거
+        function removeFromPrintList(index) {
+            printList.splice(index, 1);
+            updatePrintList();
+        }
+
+        // 전체 인쇄
+        function printAll() {
+            if (printList.length === 0) {
+                alert('인쇄할 문패가 없습니다!');
+                return;
+            }
+            
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = printList.map((sign, index) => `
+                <div class="print-sign" style="max-width: 400px;">
+                    ${sign}
+                </div>
+            `).join('');
+            
+            window.print();
+        }
+
+        // 배경색 선택
+        document.querySelectorAll('.color-option').forEach(color => {
+            color.addEventListener('click', function() {
+                const doorSign = document.getElementById('doorSign');
+                const newColor = this.dataset.color;
+                
+                // 기존 배경색 클래스 제거
+                doorSign.className = doorSign.className.replace(/bg-\w+-200/g, '');
+                // 새 배경색 추가
+                doorSign.classList.add(newColor);
+                
+                // 선택된 색상 표시
+                document.querySelectorAll('.color-option').forEach(c => c.classList.remove('ring-4', 'ring-purple-400'));
+                this.classList.add('ring-4', 'ring-purple-400');
+            });
+        });
+        
+        // 글씨체 선택
+        document.querySelectorAll('input[name="font"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                selectedFont = this.value;
+                const doorSign = document.getElementById('doorSign');
+                
+                // 기존 폰트 클래스 제거
+                doorSign.classList.remove('font-handwriting', 'font-neat', 'font-cute');
+                // 새 폰트 추가
+                doorSign.classList.add(selectedFont);
+            });
+        });
+        
+        // 스티커 추가
+        document.querySelectorAll('#stickerPalette span').forEach(sticker => {
+            sticker.addEventListener('click', function() {
+                if (stickerCount >= 5) {
+                    alert('스티커는 최대 5개까지 붙일 수 있어요!');
+                    return;
+                }
+                
+                const doorSign = document.getElementById('doorSign');
+                const newSticker = document.createElement('div');
+                newSticker.className = 'sticker';
+                newSticker.textContent = this.textContent;
+                newSticker.style.left = Math.random() * (doorSign.offsetWidth - 50) + 'px';
+                newSticker.style.top = Math.random() * (doorSign.offsetHeight - 50) + 'px';
+                
+                // 드래그 기능 추가
+                makeDraggable(newSticker);
+                
+                // 더블클릭으로 삭제
+                newSticker.addEventListener('dblclick', function() {
+                    this.remove();
+                    stickerCount--;
+                });
+                
+                doorSign.appendChild(newSticker);
+                stickerCount++;
+            });
+        });
+        
+        // 드래그 기능
+        function makeDraggable(element) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            
+            element.onmousedown = dragMouseDown;
+            element.ontouchstart = dragTouchStart;
+            
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                element.classList.add('dragging');
+            }
+            
+            function dragTouchStart(e) {
+                e = e || window.event;
+                pos3 = e.touches[0].clientX;
+                pos4 = e.touches[0].clientY;
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = elementTouchDrag;
+                element.classList.add('dragging');
+            }
+            
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                
+                const newTop = element.offsetTop - pos2;
+                const newLeft = element.offsetLeft - pos1;
+                const parent = element.parentElement;
+                
+                // 경계 체크
+                if (newTop >= 0 && newTop <= parent.offsetHeight - element.offsetHeight) {
+                    element.style.top = newTop + "px";
+                }
+                if (newLeft >= 0 && newLeft <= parent.offsetWidth - element.offsetWidth) {
+                    element.style.left = newLeft + "px";
+                }
+            }
+            
+            function elementTouchDrag(e) {
+                e = e || window.event;
+                const touch = e.touches[0];
+                pos1 = pos3 - touch.clientX;
+                pos2 = pos4 - touch.clientY;
+                pos3 = touch.clientX;
+                pos4 = touch.clientY;
+                
+                const newTop = element.offsetTop - pos2;
+                const newLeft = element.offsetLeft - pos1;
+                const parent = element.parentElement;
+                
+                if (newTop >= 0 && newTop <= parent.offsetHeight - element.offsetHeight) {
+                    element.style.top = newTop + "px";
+                }
+                if (newLeft >= 0 && newLeft <= parent.offsetWidth - element.offsetWidth) {
+                    element.style.left = newLeft + "px";
+                }
+            }
+            
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+                element.classList.remove('dragging');
+            }
+        }
+        
+        // 텍스트 입력 실시간 반영
+        document.getElementById('ownerInput').addEventListener('input', function() {
+            const display = document.getElementById('displayOwner');
+            display.textContent = this.value || '문패 주인을 입력해주세요';
+        });
+        
+        document.getElementById('nameInput').addEventListener('input', function() {
+            const display = document.getElementById('displayName');
+            display.textContent = this.value || '이름을 입력해주세요';
+        });
+        
+        document.getElementById('moodInput').addEventListener('input', function() {
+            const display = document.getElementById('displayMood');
+            display.textContent = this.value || '-';
+        });
+        
+        document.getElementById('requestInput').addEventListener('input', function() {
+            const display = document.getElementById('displayRequest');
+            display.textContent = this.value || '-';
+        });
+        
+        document.getElementById('mottoInput').addEventListener('input', function() {
+            const display = document.getElementById('displayMotto');
+            display.textContent = this.value || '-';
+        });
+        
+        // 이미지로 저장
+        async function saveAsImage() {
+            const doorSign = document.getElementById('doorSign');
+            
+            try {
+                const canvas = await html2canvas(doorSign, {
+                    backgroundColor: null,
+                    scale: 2,
+                    logging: false
+                });
+                
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '나의_문패_' + new Date().getTime() + '.png';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            } catch (error) {
+                console.error('이미지 저장 중 오류:', error);
+                alert('이미지 저장에 실패했습니다.');
+            }
+        }
+        
+        // PDF로 저장
+        async function saveAsPDF() {
+            const doorSign = document.getElementById('doorSign');
+            
+            try {
+                const canvas = await html2canvas(doorSign, {
+                    backgroundColor: null,
+                    scale: 2,
+                    logging: false
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                const imgWidth = 170;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                const x = (210 - imgWidth) / 2;
+                const y = 20;
+                
+                pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+                pdf.save('나의_문패_' + new Date().getTime() + '.pdf');
+            } catch (error) {
+                console.error('PDF 저장 중 오류:', error);
+                alert('PDF 저장에 실패했습니다.');
+            }
+        }
+        
+        // 초기화
+        function resetSign() {
+            if (confirm('정말 새로 만들까요? 지금까지 만든 문패는 사라져요!')) {
+                // 입력 필드 초기화
+                document.getElementById('ownerInput').value = '';
+                document.getElementById('nameInput').value = '';
+                document.getElementById('moodInput').value = '';
+                document.getElementById('requestInput').value = '';
+                document.getElementById('mottoInput').value = '';
+                
+                // 표시 텍스트 초기화
+                document.getElementById('displayOwner').textContent = '문패 주인을 입력해주세요';
+                document.getElementById('displayName').textContent = '이름을 입력해주세요';
+                document.getElementById('displayMood').textContent = '-';
+                document.getElementById('displayRequest').textContent = '-';
+                document.getElementById('displayMotto').textContent = '-';
+                
+                // 스티커 제거
+                document.querySelectorAll('.sticker').forEach(s => s.remove());
+                stickerCount = 0;
+                
+                // 디자인 초기화
+                const doorSign = document.getElementById('doorSign');
+                doorSign.className = 'bg-pink-200 p-6 font-handwriting size-medium border-4 border-solid border-gray-800';
+                
+                // 글씨체 초기화
+                document.querySelector('input[name="font"][value="font-handwriting"]').checked = true;
+                
+                // 선택 표시 초기화
+                document.querySelectorAll('.color-option, .size-option, .border-option').forEach(opt => {
+                    opt.classList.remove('ring-4', 'ring-2', 'ring-purple-400', 'bg-purple-50');
+                });
+                
+                // 첫 번째 색상과 보통 크기 선택 표시
+                document.querySelector('.color-option').classList.add('ring-4', 'ring-purple-400');
+                document.querySelectorAll('.size-option')[1].classList.add('ring-4', 'ring-purple-400', 'bg-purple-50');
+            }
+        }
+    </script>
+</body>
+</html>
