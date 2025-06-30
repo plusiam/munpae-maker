@@ -3,7 +3,7 @@
 초등학생들이 자신의 감정을 표현하고 소통하는 방법을 배울 수 있는 교육용 웹 도구입니다.
 
 [![Live Demo](https://img.shields.io/badge/Demo-Live-brightgreen)](https://plusiam.github.io/munpae-maker/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
 
 ## 📌 프로젝트 소개
 
@@ -76,7 +76,7 @@
 
 ## 🤝 기여하기
 
-이 프로젝트는 오픈소스입니다. 개선 사항이나 버그를 발견하시면 이슈를 등록해주세요.
+이 프로젝트는 교육 목적의 오픈소스입니다. 개선 사항이나 버그를 발견하시면 이슈를 등록해주세요.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
@@ -86,7 +86,21 @@
 
 ## 📄 라이선스
 
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+이 프로젝트는 **Creative Commons Attribution-NonCommercial 4.0 International License** 하에 배포됩니다.
+
+### 허용 사항:
+- ✅ 교육 목적 사용 (학교, 학원, 개인 학습)
+- ✅ 비영리 목적 사용
+- ✅ 수정 및 재배포 (동일 라이선스 적용)
+- ✅ 출처 표시와 함께 공유
+
+### 금지 사항:
+- ❌ 상업적 이용
+- ❌ 유료 서비스에 포함
+- ❌ 광고 수익 창출
+- ❌ 판매 또는 라이선싱
+
+자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
 ## 👏 감사의 글
 
